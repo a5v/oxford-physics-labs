@@ -1,0 +1,469 @@
+#define JPsiLab_cxx
+#include "JPsiLab.h"
+#include <TH2.h>
+#include <TStyle.h>
+#include <TCanvas.h>
+#include <TMath.h>
+#include <iostream>
+#include "LsqFit.hh"
+#include "LsqFit.cc"
+
+void JPsiLab::Loop()
+{
+  //---
+  //--- The next section contains details of creating the output tree
+  //---
+  TFile *f2 = new TFile("jpm.root", "RECREATE");  //make a new root file
+  f2->cd();
+  TTree *output = new TTree("output","calculated values");  //make a new tree inside the file
+
+  struct outvar {         //here we are creating data structures of new variables.
+    Float_t jpmass;//having an existing structure makes it MUCH simpler to create new branches
+    Float_t jppt;
+  };                      //and leaves in the tree.  the variables will be filled and written to the
+  outvar out;             //tree later, but for now we just create space in memory for them.
+
+  
+  struct vtxvar { // data structure for vertices
+    Float_t xintersect;
+    Float_t yintersect;
+    Float_t primx;
+    Float_t primy;
+  };
+  vtxvar outvtx;
+
+
+  struct muvarp { // data structure for positive muons
+    Float_t ptp;
+    Float_t pzp;
+
+  };
+  muvarp pmvar;
+
+  struct muvarm { // data structure for negative muons
+    Float_t ptm;
+    Float_t pzm;
+
+  };
+  muvarm mmvar;
+
+  /*struct kvar { // data structure for kaons
+    Float_t ptk;
+    Float_t pzk;
+
+  };
+  kvar outk;*/
+
+
+  /*struct outbvar { // data structures for b-mesons
+    Float_t bmass;       
+  };                      
+  outbvar outb;*/            
+
+  struct kvarp { // data structure for positive muons
+    Float_t kptp;
+    Float_t kpzp;
+
+  };
+  kvarp pkvar;
+
+  struct kvarm { // data structure for positive muons
+    Float_t kptm;
+    Float_t kpzm;
+
+  };
+ kvarm mkvar;
+
+
+  struct outphivar { // data structures for phi-mesons
+    Float_t phimass;       
+  };                      
+  outphivar outphi;
+
+  struct outbsvar { // data structures for bs-mesons
+    Float_t bsmass;
+    Float_t bpt;
+    Float_t btau;
+  };                      
+  outbsvar outbs;
+
+  struct fitvar { // data structures for b-mesons
+    Float_t fitx;
+    Float_t fity;
+    Float_t chi2;
+    Float_t prob;
+    Float_t primx;
+    Float_t primy;
+    Float_t lxy0;
+    Float_t siglxy0;
+    Float_t lxyv;
+    Float_t siglxyv;
+    Float_t fitvd0;
+    Float_t sigfitvd0;
+    Float_t fitphi;
+    Float_t sigx;
+    Float_t sigy;
+    Float_t covxy;
+  };                      
+  fitvar fit;
+  
+  //make new branches and leaves in the "output" tree:
+
+  TBranch *jpmass = output->Branch("jpmass",&out.jpmass,"jpmass/F:jppt"); 
+  TBranch *vertex = output->Branch("vertex",&outvtx.xintersect,"xintersect/F:yintersect:primx:primy");
+
+  TBranch *pmuon = output->Branch("pmuon",&pmvar.ptp,"ptp/F:pzp");
+  TBranch *mmuon = output->Branch("mmuon",&mmvar.ptm,"ptm/F:pzm");
+
+  TBranch *pkaon = output->Branch("pkaon",&pkvar.kptp,"kptp/F:kpzp");
+  TBranch *mkaon = output->Branch("mkaon",&mkvar.kptm,"kptm/F:kpzm");
+  TBranch *phimass = output->Branch("phimass",&outphi.phimass,"phimass/F");
+  TBranch *bsmass = output->Branch("bsmass",&outbs.bsmass,"bsmass/F:bpt:btau");
+
+  TBranch *jpsifit = output->Branch("jpsifit",&fit.fitx,"fitx/F:fity:chi2:prob:primx:primy:lxy0:siglxy0:lxyv:siglxyv:fitd0:sigfitd0:fitphi");
+  
+  // TBranch *kaon = output->Branch("kaon",&outk.ptk,"ptk/F:pzk");  
+  // TBranch *bmass = output->Branch("bmass",&outb.bmass,"bmass/F");
+
+  if (jpmass) ;    // This just avoids a 'variable not used' message
+  if (vertex) ;    // so does this
+  
+  //---
+  //--- Create new histograms here, by copy-pasting the example
+  //--- below and changing the jpm variable to something unique
+  //---
+  TH1F *hMOMpt = new TH1F("hMOMpt", "Transverse momentum of muons",100,0.0,5.20);
+  TH1F *jpm = new TH1F("jpm", "Dimuon Invariant Mass; m (GeV/c^2)",100,3.00,3.20);
+  TH1F *hMOMpz = new TH1F("hMOMpz", "z-component of the momentum of muons",100,0.0,5.20);
+  TH1F *hCosth = new TH1F("hCosth", "cos theta of momentum of muons",100,-1.0,1.0);
+  TH1F *hCosthp = new TH1F("hCosthp", "cos theta of momentum of the positive muons",100,-1.0,1.0);
+  TH1F *hCosthm = new TH1F("hCosthm", "cos theta of momentum of the negative muons",100,-1.0,1.0);
+  TH1F *hNum = new TH1F("hNum", "Number of Events of at Least Two Muons",11,0.0,10.0);
+
+  TH1F *hMOMpt_jp = new TH1F("hMOMpt_jp", "Transverse momentum of the J/ Psi",100,0.0,5.20);
+  TH1F *hMOMpz_jp = new TH1F("hMOMpz_jp", "z-component of the momentum of the J/ Psi",100,0.0,5.20);
+  TH1F *hCosth_jp = new TH1F("hCosth_jp", "cos theta of momentum of the J/ Psi",100,-1.0,1.0);
+  TH1F *hDecay_jp = new TH1F("hDecay_jp", "decay angle of the J/ Psi",100,-1.0,1.0);
+
+  TH1F *bsm = new TH1F("bsm", "Strange B-meson Invariant Mass",100,4.9,5.8);
+  TH1F *hbtau = new TH1F("hbtau", "Strange B-meson Lifetime",100,0,0.2);
+
+  //now retrieve the input data and start looping over entries:
+   if (fChain == 0) return;
+
+   Long64_t nentries = fChain->GetEntriesFast();
+
+   Int_t nrunnew = 1;
+   Int_t nrunold = 0;
+
+   Long64_t nbytes = 0, nb = 0;
+   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+      Long64_t ientry = LoadTree(jentry);
+      if (ientry < 0) break;
+      nb = fChain->GetEntry(jentry);   nbytes += nb;
+      if (nrunnew != nrunold) {  //this output helps you be sure your code is running over long intervals!
+	std::cout<<"run number ="<<GLB_nrun<<"  entry number ="<<jentry<<std::endl; 
+	nrunold = nrunnew;
+      }
+      nrunnew = Int_t(jentry/100000);
+
+      if (MU_nMuon<2.0) continue; //do not bother if fewer than two muons in the event
+
+      // lsqfit.clear();
+
+      hNum->Fill(MU_nMuon); //fills histogram with the number of muon events that are greater than 2
+      
+      
+      Float_t primarysvxx = VERTEX_vtx_svx_beamx+ZVTX_zvtx_zPos[0]*VERTEX_vtx_svx_slopex; //find primary vertex
+      Float_t primarysvxy = VERTEX_vtx_svx_beamy+ZVTX_zvtx_zPos[0]*VERTEX_vtx_svx_slopey;  
+      outvtx.primx = primarysvxx;  //store the primary vtx coordinates in leaves
+      outvtx.primy = primarysvxy;
+
+      fit.primx = primarysvxx;
+      fit.primy = primarysvxy;
+      
+
+      for (Int_t nMup=0;nMup<MU_nMuon;nMup++){ //muon+ loop
+        Int_t trkp = MU_mu_trkIndex[nMup];    //find track corresponding to the muon
+	if (trkp>299 || trkp<0) continue;    //eliminating unphysical track numbers
+        Int_t mtypep = 0;  //classify muons by detector
+        if (MU_mu_fidBMU[nMup]) continue;
+        if (MU_mu_fidCMX[nMup]) mtypep = 2;
+        if (MU_mu_fidCMU[nMup]) mtypep = 3;
+        if (MU_mu_fidCMP[nMup]) mtypep = 5;
+        if (MU_mu_fidCMU[nMup]&& MU_mu_fidCMX[nMup]) mtypep = 4;
+        if (MU_mu_fidCMU[nMup]&& MU_mu_fidCMP[nMup]) mtypep = 6;
+        if (mtypep == 0) continue;
+        if (mtypep < 5) continue;  //use only muons that made it to the most shielded detector
+        if (TRACK_trk_nonbc_nsvxHits[trkp] < 1) continue;  //SVX tracks only
+
+        double costh=-1.02;  //Invalid in case p=0
+        double p = TMath::Sqrt(MOM_pt[trkp]*MOM_pt[trkp] + MOM_pz[trkp]*MOM_pz[trkp]);
+        if (p > 0.) costh=MOM_pz[trkp]/p;
+
+	//---
+        //--- This is the place to insert histograms on single-muon quantities
+        //---
+        hMOMpt->Fill(MOM_pt[trkp]);  //Plot the muon transverse momentum
+	hMOMpz->Fill(MOM_pz[trkp]);  //Plot the muon z-component of momentum
+	hCosth->Fill(costh);  //Plot the muon cos theta of momentum
+
+	if (TRACK_trk_nonbc_curv[trkp]>0) hCosthp->Fill(costh); //positive muon
+	if (TRACK_trk_nonbc_curv[trkp]<0) hCosthm->Fill(costh); //negative  muon
+
+	
+        if (TRACK_trk_nonbc_curv[trkp]<0) continue; //positive muon (if negative muon, skip over this)
+        for (Int_t nMum=0;nMum<MU_nMuon;nMum++){ //muon- loop
+          Int_t trkm = MU_mu_trkIndex[nMum];
+	  if (trkm>299 || trkm<0) continue;
+          if (trkp == trkm) continue;//probably not needed
+          Int_t mtypem = 0;
+          if (MU_mu_fidBMU[nMum]) continue;
+          if (MU_mu_fidCMX[nMum]) mtypem = 2;
+          if (MU_mu_fidCMU[nMum]) mtypem = 3;
+          if (MU_mu_fidCMP[nMum]) mtypem = 5;
+          if (MU_mu_fidCMU[nMum]&& MU_mu_fidCMX[nMum]) mtypem = 4;
+          if (MU_mu_fidCMU[nMum]&& MU_mu_fidCMP[nMum]) mtypem = 6;
+          if (mtypem == 0) continue;
+          if (mtypem <5) continue;
+          if (TRACK_trk_nonbc_nsvxHits[trkm] < 1) continue;
+          if (TRACK_trk_nonbc_curv[trkm]>0) continue; //negative muon
+
+          //---
+          //--- This is the place to insert histograms on paired muon quantities
+          //--- and calculate variables for the output 
+
+	  
+	  
+	  double costh_jp=-1.02;  //Invalid in case p_jp=0
+
+	  double px_jp = MOM_px[trkp]+MOM_px[trkm];
+	  double py_jp = MOM_py[trkp]+MOM_py[trkm];
+	  double pz_jp = MOM_pz[trkp]+MOM_pz[trkm];
+	  
+	  double pt_jp = TMath::Sqrt(px_jp*px_jp+py_jp*py_jp);
+	  double p_jp = TMath::Sqrt(px_jp*px_jp+py_jp*py_jp+pz_jp*pz_jp);
+
+	  if (p_jp > 0.) costh_jp=(MOM_pz[trkp]+MOM_pz[trkm])/p_jp;
+	  
+	  
+	  hMOMpt_jp->Fill(TMath::Sqrt(px_jp*px_jp+py_jp*py_jp));
+	  hMOMpz_jp->Fill(pz_jp);
+	  hCosth_jp->Fill(costh_jp);
+
+	  hDecay_jp->Fill((px_jp*MOM_px[trkp]+py_jp*MOM_py[trkp]+pz_jp*MOM_pz[trkp])/(p_jp*p));
+
+
+	  
+	  double MUMASS = 0.105658; // mass of muon in GeV
+	  
+	  Float_t psimass = TMath::Sqrt(2 * MUMASS * MUMASS + 2 * (TMath::Sqrt(MOM_pt[trkp]*MOM_pt[trkp]+MOM_pz[trkp]*MOM_pz[trkp]+MUMASS*MUMASS)* TMath::Sqrt(MOM_pt[trkm]*MOM_pt[trkm]+MOM_pz[trkm]*MOM_pz[trkm]+MUMASS*MUMASS)-(MOM_px[trkp]*MOM_px[trkm]+MOM_py[trkp]*MOM_py[trkm]+MOM_pz[trkp]*MOM_pz[trkm])));  //calculate mass of jpsi candidate
+
+	  if (psimass>3.12 || psimass<3.07) continue;  //loose jpsi mass cut
+	  if (pt_jp<2) continue; // high momentum cut
+	  out.jpmass=psimass;  //store calculated values in leaves
+	  out.jppt= pt_jp;
+
+	  pmvar.ptp=MOM_pt[trkp];
+	  pmvar.pzp=MOM_pz[trkp];
+	  mmvar.ptm=MOM_pt[trkm];
+	  mmvar.pzm=MOM_pz[trkm];
+
+	  
+	  outvtx.xintersect=0;   //change these to calculate muon track intersection
+	  outvtx.yintersect=0;
+
+	  jpm->Fill(psimass); //fill the histogram with mass values
+
+
+	  // Kaon loop (Week 1)
+	  /*for (Int_t trkk=0;trkk<TRACK_ntrk;trkk++){ //kaon loop
+	    if (trkk>299 || trkk<0) continue;
+	    if (trkk == trkm) continue;  // cut when kaon = mu-
+	    if (trkk == trkp) continue;  // cut when kaon = mu+
+ 	    if (TRACK_trk_nonbc_nsvxHits[trkk] < 1) continue; // get tracks that go near silicon vertex
+	    // if (TRACK_trk_nonbc_curv[trkk]>0) continue; //checks whether positive or negative
+
+	    if (MOM_pt[trkk] < 2) continue; // high momentum
+
+	    outk.ptk=MOM_pt[trkk];
+	    outk.pzk=MOM_pz[trkk];
+	    
+	    double KMASS = 0.495; // mass of kaon in GeV
+	    
+	    Float_t bmass = TMath::Sqrt(KMASS * KMASS + psimass * psimass + 2 * (TMath::Sqrt(MOM_pt[trkk]*MOM_pt[trkk]+MOM_pz[trkk]*MOM_pz[trkk]+KMASS*KMASS)* TMath::Sqrt(p_jp*p_jp+psimass*psimass)-(MOM_px[trkk]*px_jp+MOM_py[trkk]*py_jp+MOM_pz[trkk]*pz_jp)));  //calculate mass of B meson candidate
+
+	    if (bmass<4.9 || bmass>6.0) continue;  //loose b mass cut
+	    outb.bmass=bmass;  //store calculated values in leaves
+
+	    bm->Fill(bmass); //fill the histogram with mass values
+	    output->Fill();  //fill the tree with the calculated leaf values*/
+
+
+
+
+	  
+	  for (Int_t trkkp=0;trkkp<TRACK_ntrk;trkkp++){ //kaon+ 
+	    if (trkkp>299 || trkkp<0) continue;    //eliminating unphysical track numbers
+	    if (trkkp == trkm) continue;  // cut when kaon+ = mu-
+	    if (trkkp == trkp) continue;  // cut when kaon+ = mu+
+	    if (TRACK_trk_nonbc_nsvxHits[trkkp] < 1) continue; // get tracks that go near silicon vertex	    
+
+	    if (MOM_pt[trkkp] < 2) continue; // high momentum cut
+
+
+	    // double costh=-1.02;  //Invalid in case p=0
+	    // double p = TMath::Sqrt(MOM_pt[trkp]*MOM_pt[trkp] + MOM_pz[trkp]*MOM_pz[trkp]);
+	    // if (p > 0.) costh=MOM_pz[trkp]/p;
+	    
+	    //---
+	    //--- This is the place to insert histograms on single-muon quantities
+	    //---
+	    // hMOMkpt->Fill(MOM_pt[trkkp]);  //Plot the muon transverse momentum
+	    // hMOMkpz->Fill(MOM_pz[trkkp]);  //Plot the muon z-component of momentum
+	    // hCosth->Fill(costh);  //Plot the muon cos theta of momentum
+	    
+	    // if (TRACK_trk_nonbc_curv[trkkp]>0) hCosthp->Fill(costh); //positive muon
+	    // if (TRACK_trk_nonbc_curv[trkkp]<0) hCosthm->Fill(costh); //negative  muon
+	    
+	
+	    if (TRACK_trk_nonbc_curv[trkkp]<0) continue; //positive kaon (if negative kaon, skip over this)
+
+	    for (Int_t trkkm=0;trkkm<TRACK_ntrk;trkkm++){ //kaon- loop
+	      if (trkm>299 || trkm<0) continue;
+	      if (trkkm == trkm) continue;  // cut when kaon- = mu-
+	      if (trkkm == trkp) continue;  // cut when kaon- = mu+
+	      if (trkkm == trkkp) continue;  // cut when kaon- = kaon+
+	      if (TRACK_trk_nonbc_curv[trkkm]>0) continue; //negative kaon
+
+	      if (MOM_pt[trkkm] < 2) continue; // high momentum cut
+	      
+	      //---
+	      //--- This is the place to insert histograms on paired muon quantities
+	      //--- and calculate variables for the output 
+	      
+	      double costh_phi=-1.02;  //Invalid in case p_jp=0
+	      
+	      double px_phi = MOM_px[trkkp]+MOM_px[trkkm];
+	      double py_phi = MOM_py[trkkp]+MOM_py[trkkm];
+	      double pz_phi = MOM_pz[trkkp]+MOM_pz[trkkm];
+	      
+	      double pt_phi = TMath::Sqrt(px_phi*px_phi+py_phi*py_phi);
+	      double p_phi = TMath::Sqrt(px_phi*px_phi+py_phi*py_phi+pz_phi*pz_phi);
+	      
+	      if (p_phi > 0.) costh_phi=(MOM_pz[trkkp]+MOM_pz[trkkm])/p_phi;
+	      
+	  
+	      // hMOMpt_jp->Fill(TMath::Sqrt(px_jp*px_jp+py_jp*py_jp));
+	      //hMOMpz_jp->Fill(pz_jp);
+	      //hCosth_jp->Fill(costh_jp);
+	      
+	      //hDecay_jp->Fill((px_jp*MOM_px[trkp]+py_jp*MOM_py[trkp]+pz_jp*MOM_pz[trkp])/(p_jp*p));
+
+	      
+	      
+	      double KMASS = 0.4937; // mass of muon in GeV
+	      
+	      Float_t phimass = TMath::Sqrt(2 * KMASS * KMASS + 2 * (TMath::Sqrt(MOM_pt[trkkp]*MOM_pt[trkkp]+MOM_pz[trkkp]*MOM_pz[trkkp]+KMASS*KMASS)* TMath::Sqrt(MOM_pt[trkkm]*MOM_pt[trkkm]+MOM_pz[trkkm]*MOM_pz[trkkm]+KMASS*KMASS)-(MOM_px[trkkp]*MOM_px[trkkm]+MOM_py[trkkp]*MOM_py[trkkm]+MOM_pz[trkkp]*MOM_pz[trkkm])));  //calculate mass of phi candidate
+	      
+	      if (phimass>1.025 || phimass<1.015) continue;  //loose phi mass cut
+	      if (pt_phi<2) continue; // high momentum cut
+	      outphi.phimass=phimass;  //store calculated values in leaves
+	  
+	      pkvar.kptp=MOM_pt[trkkp];
+	      pkvar.kpzp=MOM_pz[trkkp];
+	      mkvar.kptm=MOM_pt[trkkm];
+	      mkvar.kpzm=MOM_pz[trkkm];
+	      
+	      
+	      // outvtx.xintersect=0;   //change these to calculate muon track intersection
+	      // outvtx.yintersect=0;
+	      
+	      // phim->Fill(phimass); //fill the histogram with mass values
+
+
+	      double px_b = px_phi+px_jp;
+	      double py_b = py_phi+py_jp;
+	      double pz_b = pz_phi+pz_phi;
+
+	      double pt_b = TMath::Sqrt(px_b*px_b+py_b*py_b);
+	      
+	      Float_t bsmass = TMath::Sqrt(phimass * phimass + psimass * psimass + 2 * (TMath::Sqrt(p_phi*p_phi+phimass*phimass)* TMath::Sqrt(p_jp*p_jp+psimass*psimass)-(px_phi*px_jp+py_phi*py_jp+pz_phi*pz_jp)));  //calculate mass of B meson candidate
+	      
+	      if (bsmass<4.9 || bsmass>5.8) continue;  //loose b mass cut
+	      outbs.bsmass=bsmass;  //store calculated values in leaves
+	      outbs.bpt=pt_b;
+
+	      
+
+	      bsm->Fill(bsmass); //fill the histogram with mass values
+
+
+	      
+	      LsqFit lsqfit;
+	      lsqfit.push(TRACK_trk_nonbc_phi[trkp], TRACK_trk_nonbc_d0[trkp], sqrt(TRKDET_trkdet_nonbc_sigD02[trkp]), MOM_pt[trkp]);
+	      lsqfit.push(TRACK_trk_nonbc_phi[trkm], TRACK_trk_nonbc_d0[trkm], sqrt(TRKDET_trkdet_nonbc_sigD02[trkm]), MOM_pt[trkm]);
+	      lsqfit.push(TRACK_trk_nonbc_phi[trkkp], TRACK_trk_nonbc_d0[trkkp], sqrt(TRKDET_trkdet_nonbc_sigD02[trkkp]), MOM_pt[trkkp]);
+	      lsqfit.push(TRACK_trk_nonbc_phi[trkkm], TRACK_trk_nonbc_d0[trkkm], sqrt(TRKDET_trkdet_nonbc_sigD02[trkkm]), MOM_pt[trkkm]);
+
+	      bool fitStat = lsqfit.fit();
+	      if(fitStat){
+		fit.chi2 = lsqfit.chi2();	 
+	      }
+	      else fit.chi2 = 999;
+
+	      fit.prob = TMath::Prob(fit.chi2, lsqfit.ndof());
+
+	      fit.fitx = lsqfit.x();
+	      fit.fity = lsqfit.y();
+	      fit.lxy0 = lsqfit.lxy();
+	      fit.lxyv = lsqfit.lxy(fit.primx, fit.primy);
+	      fit.fitvd0 = lsqfit.d0(fit.primx, fit.primy);
+	      fit.siglxy0 = lsqfit.siglxy();
+	      fit.siglxyv = lsqfit.siglxy(fit.sigx,fit.sigy,fit.covxy);
+	      fit.sigfitvd0 = lsqfit.sigd0(fit.sigx,fit.sigy,fit.covxy);
+	      fit.sigx = lsqfit.sigx();
+	      fit.sigy = lsqfit.sigy();
+	      fit.fitx = lsqfit.covxy();
+	      fit.fitphi = lsqfit.phi();
+	      if(fit.prob<0.01) continue;
+	      
+	      
+	      outbs.btau = fit.lxyv*outbs.bsmass/outbs.bpt;
+
+	      hbtau->Fill(outbs.btau);
+
+	      output->Fill();  //fill the tree with the calculated leaf values
+	      
+	    }// kaon- loop
+	  }// kaon+ loop
+        } //muon- loop
+      }// muon+ loop
+
+   }
+   f2->cd();
+   output->Write();  //once the tree has been fully filled, write to file
+
+   //---
+   //--- Insert Write() statements for each of the histograms you add here
+   //---
+   jpm->Write();     //write mass plot histogram
+   hMOMpt->Write(); //write pt histogram
+   hMOMpz->Write(); //write px histogram
+   hCosth->Write(); //write costh histogram
+   hCosthp->Write(); //write costh histogram
+   hCosthm->Write(); //write costh histogram
+   hNum->Write(); //write number of events histogram
+
+   hMOMpt_jp->Write(); //write pt for jp histogram
+   hMOMpz_jp->Write(); //write pz for jp histogram
+   hCosth_jp->Write(); //write costh for jp histogram
+   hDecay_jp->Write(); //write decay angle for jp histogram
+
+   bsm->Write();     //write mass plot histogram for B mesons
+   hbtau->Write();     //write mass plot histogram for B mesons
+   
+   f2->Close();      //close the file
+   std::cout<<"loop finished"<<std::endl;
+}
+

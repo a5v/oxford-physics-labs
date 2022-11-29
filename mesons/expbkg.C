@@ -1,0 +1,48 @@
+Double_t background(Double_t *x, Double_t *par)
+{
+  Double_t background = par[0]*exp(-(x[0]-par[1])*(x[0]-par[1])/(2*par[2]*par[2]));
+  return background;
+}
+
+Double_t gausbkg(Double_t *x, Double_t *par)
+{
+  Double_t gausbkg = par[0]*exp(-(x[0]-par[1])*(x[0]-par[1])/(2*par[2]*par[2]))+par[3];
+  return gausbkg;
+}
+
+Double_t exponential(Double_t *x, Double_t *par)
+{
+  Double_t exponential = par[0]*exp(-x[0]/par[1]);
+  return exponential;
+}
+
+
+Double_t lorentzianPeak(Double_t *x, Double_t *par) {
+      return (0.5*par[0]*par[1]/TMath::Pi()) / TMath::Max(1.e-10,
+							  (x[0]-par[2])*(x[0]-par[2])+ .25*par[1]*par[1]);
+}
+
+
+// Sum of background and peak function
+   Double_t fitFunction(Double_t *x, Double_t *par) {
+      return background(x,par) + exponential(x,&par[2]);
+   }
+
+
+
+
+
+// Sum of background and peak function
+
+// Double_t fitFunction(Double_t *x, Double_t *par)
+// {
+//   return background(x,par) + exponential(x,&par[3]);
+// }
+
+// TF1 *fitFcn = new TF1("fitFcn",fitFunction,-1,1,5);
+// TF1 *fitFcn = new TF1("fitFcn", fitFunction, 0, 1.00, 5);
+
+// g1 = new TF1("m1","gaus",-2,2);
+// g2 = new TF1("m2","expo",0,0.5);
+   // The total is the sum of the three, each has 3 parameters
+// total = new TF1("mstotal","gaus(0)+expo(0)",-2,2);
