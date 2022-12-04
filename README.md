@@ -7,7 +7,7 @@ Series of physics-based data analysis projects, which I received a practical com
 ![plot](./magnetophonon-effect/notebooks/README_image.png)
 ### Superconductivity (Python, Jupyter Notebook)
 ![plot](./superconductivity/notebooks/README_image.png)
-### B Mesons (R, R Markdown)
+### B Mesons (C++)
 ![plot](./mesons/images/README_image.png)
 ### Chaos (MATLAB)
 ![plot](./chaos/CO24_report/README_image.jpg)
