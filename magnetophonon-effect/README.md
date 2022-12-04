@@ -1,5 +1,9 @@
 # magnetophonon-effect
 
+![plot](./notebooks/README_image.png)
+
+Project completed in January 2021
+
 ## SS05.ipynb
 
 Python jupyter notebook containing a walkthrough of the data analysis to understand the magnetophonon effect. 
@@ -15,11 +19,9 @@ Data was collected by Professor Robin Nicholas
 
 
 ## Creating environment using conda
-
-conda create --name magnetophonon-effect
-
+```
+conda create -n magnetophonon-effect
 conda activate magnetophonon-effect
-
 conda install pip
-
 pip install -r requirements.txt
+```
