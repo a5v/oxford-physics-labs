@@ -1,6 +1,8 @@
 # Oxford Physics Labs
 Series of physics-based data analysis projects, which I received a practical commendation for “excellence of laboratory practical work”.
 
+More details and the setup instructions are found in the README in each individual project repository. Reports for each of the projects can be found on [my personal website](https://a5v.github.io/personal-website/projects/).
+
 ## Projects include investigations into:
 
 ### The Magnetophonon Effect (Python, Jupyter Notebok)
@@ -13,5 +15,3 @@ Series of physics-based data analysis projects, which I received a practical com
 ![plot](./chaos/CO24_report/README_image.jpg)
 ### Colour Magnitude Diagrams (R, R Markdown)
 ![plot](./colour-magnitude-diagrams/analysis/images/README_image.png)
-
-The setup instructions are found in the README in each individual project repository. Reports for each of the projects can be found on [my personal website](https://a5v.github.io/personal-website/projects/).
